@@ -71,8 +71,8 @@ class ColorEqualization:
             np.where(sorted_valleys_and_max_peak == max_peak_index)[0][0] - 1
         ]
         
-        self.plot_histogram(histogram, [range_start], show=False, color='red')
-        self.plot_histogram(histogram, range_end, show=True, color='green')
+        #self.plot_histogram(histogram, [range_start], show=False, color='red')
+        #self.plot_histogram(histogram, range_end, show=True, color='green')
         
         return [range_start, range_end], histogram
 
@@ -88,7 +88,6 @@ class ColorEqualization:
         equalized_image = cv2.cvtColor(transformed_space, getattr(cv2, f"COLOR_{space_name}2BGR"))
         return equalized_image
 
-
     def start(self, equalization, channels):
         for image_path in tqdm(self.images):
             image = cv2.imread(image_path)
@@ -97,13 +96,13 @@ class ColorEqualization:
             
             space_name = equalization['fn'].split('_')[0].upper()
             equalized_image = self.back_projection(image, ranges, space_name, channels)
-            im.show_pillow(equalized_image)
-
+            #im.show_pillow(equalized_image)
+            #im.save(equalized_image, f"{self.save_path}/{equalization['fn']}_{image_path.split('/')[-1]}")
 
 
 hce = ColorEqualization(
-    images=glob('data/*.JPG'), 
-    save_path=None,
+    images=glob('data/*.JPG'),
+    save_path='saved'
     )
 
 hce.start(
