@@ -45,15 +45,21 @@ class CoinAlign:
         y_end_peak = np.argmax(yaxis_grad[len(yaxis_grad)//2:]) + len(yaxis_grad)//2
         y_end = len(yaxis_grad) - np.argwhere(yaxis_grad[y_end_peak:] == 0)[-2][0]
 
-        xsys_yeye = np.array([[x_start, y_start], [x_end, y_end]])
-        max_dim = 
+        xsys_xeye = np.array([[x_start, y_start], [x_end, y_end]])
+        axis_sizes = xsys_xeye[1] - xsys_xeye[0]
+        axis_diff = np.abs(axis_sizes[0] - axis_sizes[1])
 
-        return (
-            int(x_start - margin * image.shape[1]),
-            int(y_start - margin * image.shape[0]),
-            int(x_end + margin * image.shape[1]),
-            int(y_end + margin * image.shape[0])
-        )
+        min_axis_index = np.argmin(axis_sizes)
+        xsys_xeye[0][min_axis_index] -= axis_diff // 2
+        xsys_xeye[1][min_axis_index] += axis_diff // 2
+
+        # apply margin
+        xsys_xeye[0, 0] -= np.max(axis_sizes) * margin
+        xsys_xeye[0, 1] -= np.max(axis_sizes) * margin
+        xsys_xeye[1, 0] += np.max(axis_sizes) * margin
+        xsys_xeye[1, 1] += np.max(axis_sizes) * margin
+
+        return *xsys_xeye[0], *xsys_xeye[1]
 
 
     def align(self, image, resize_factor=1):
