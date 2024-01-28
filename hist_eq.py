@@ -1,11 +1,10 @@
-import random
 import cv2
 import numpy as np
 from glob import glob
 from image import Image as im
+from pathlib import Path
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 from scipy import signal
 
 @dataclass
@@ -43,18 +42,15 @@ class ColorHistogram:
 
 @dataclass
 class ColorEqualization:
-    images: list[str]
-    save_path: str
-    batch_size: int = 3
-
-    def plot_histogram(self, channel, ranges=None, show=True, color='blue'):
+    @staticmethod
+    def plot_histogram(channel, ranges=None, show=True, color='blue'):
         plt.plot(channel)
         if ranges is not None:
             plt.plot(ranges, channel[ranges], "x", c=color)
         plt.show() if show else None
 
-
-    def find_equalization_ranges(self, histogram):
+    @staticmethod
+    def find_equalization_ranges(histogram):
         histogram = np.convolve(histogram, np.ones(5), mode='same')
         histogram = histogram / np.max(histogram) * 255
 
@@ -71,13 +67,13 @@ class ColorEqualization:
             np.where(sorted_valleys_and_max_peak == max_peak_index)[0][0] - 1
         ]
         
-        #self.plot_histogram(histogram, [range_start], show=False, color='red')
-        #self.plot_histogram(histogram, range_end, show=True, color='green')
+        ColorEqualization.plot_histogram(histogram, [range_start], show=False, color='red')
+        ColorEqualization.plot_histogram(histogram, range_end, show=True, color='green')
         
         return [range_start, range_end], histogram
 
-
-    def back_projection(self, image, ranges, space_name, channels):
+    @staticmethod
+    def back_projection(image, ranges, space_name, channels):
         transformed_space = cv2.cvtColor(image, getattr(cv2, f"COLOR_BGR2{space_name}"))
         for channel in channels:
             value_channel = transformed_space[:, :, channel]
@@ -88,27 +84,35 @@ class ColorEqualization:
         equalized_image = cv2.cvtColor(transformed_space, getattr(cv2, f"COLOR_{space_name}2BGR"))
         return equalized_image
 
-    def start(self, equalization, channels):
-        for image_path in tqdm(self.images):
-            image = cv2.imread(image_path)
-            histogram = getattr(ColorHistogram, equalization['fn'])(image, **equalization['args'])
-            ranges, histogram = self.find_equalization_ranges(histogram)
-            
-            space_name = equalization['fn'].split('_')[0].upper()
-            equalized_image = self.back_projection(image, ranges, space_name, channels)
-            #im.show_pillow(equalized_image)
-            #im.save(equalized_image, f"{self.save_path}/{equalization['fn']}_{image_path.split('/')[-1]}")
+    @staticmethod
+    def start(image_path, equalization, channels):
+        image = cv2.imread(image_path)
+        histogram = getattr(ColorHistogram, equalization['fn'])(image, **equalization['args'])
+        ranges, histogram = ColorEqualization.find_equalization_ranges(histogram)
+        
+        space_name = equalization['fn'].split('_')[0].upper()
+        equalized_image = ColorEqualization.back_projection(image, ranges, space_name, channels)
+        
+        #save_path = f"{self.save_path}/{Path(image_path).name}"
+        #im.save(equalized_image, save_path)
+        
+        return equalized_image
+        
+        # with open(f"{self.save_path}/histogram.txt", 'w') as f:
+        #     f.write(f"{equalization}\n")
+        #     f.write(f"{channels}\n")
 
 
-hce = ColorEqualization(
-    images=glob('data/*.JPG'),
-    save_path='saved'
+if __name__ == '__main__':
+    hce = ColorEqualization(
+        images=glob('data/*.JPG'),
+        save_path='saved'
+        )
+
+    hce.start(
+        equalization={
+            'fn': 'rgb_cv2_gray',
+            'args': {}
+        },
+        channels=[0, 1, 2],
     )
-
-hce.start(
-    equalization={
-        'fn': 'rgb_cv2_gray',
-        'args': {}
-    },
-    channels=[0, 1, 2],
-)

@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 
 @dataclass
 class CoinAlign:
-    def coin_threshold(self, image, resize_factor):
+    @staticmethod
+    def coin_threshold(image, resize_factor):
         img_resized = im.resize(image, resize_factor)
         img_gray = cv2.cvtColor(img_resized, cv2.COLOR_BGR2GRAY)
         img_blur = cv2.GaussianBlur(img_gray, (3, 3), 2)
@@ -16,8 +17,9 @@ class CoinAlign:
         img_dilate = cv2.dilate(img_canny, np.ones((4, 2)), iterations=11)
         img_erode = cv2.erode(img_dilate, np.ones((13, 7)), iterations=4)
         return cv2.bitwise_not(img_erode)
-    
-    def xywh_to_xyxy(self, x, y, w, h, image_shape):
+
+    @staticmethod
+    def xywh_to_xyxy(x, y, w, h, image_shape):
         xc = x * image_shape[1]
         yc = y * image_shape[0]
         width = w * image_shape[1]
@@ -28,7 +30,8 @@ class CoinAlign:
         y2 = int(yc + height/2)
         return x1, y1, x2, y2
 
-    def square_bounding_box(self, image, margin=0.005):
+    @staticmethod
+    def square_bounding_box(image, margin):
         coords = np.argwhere(image)
 
         xaxis_sum = np.sum(image, axis=0)
@@ -53,7 +56,6 @@ class CoinAlign:
         xsys_xeye[0][min_axis_index] -= axis_diff // 2
         xsys_xeye[1][min_axis_index] += axis_diff // 2
 
-        # apply margin
         xsys_xeye[0, 0] -= np.max(axis_sizes) * margin
         xsys_xeye[0, 1] -= np.max(axis_sizes) * margin
         xsys_xeye[1, 0] += np.max(axis_sizes) * margin
@@ -61,20 +63,18 @@ class CoinAlign:
 
         return *xsys_xeye[0], *xsys_xeye[1]
 
-
-    def align(self, image, resize_factor=1):
-        threshold = self.coin_threshold(image, resize_factor)
-        #im.show(threshold)
-        x0, y0, x1, y1 = self.square_bounding_box(threshold)
-        cv2.rectangle(image, (x0, y0), (x1, y1), (0, 0, 255), 10
-                      
-                      
-                      )
-        im.show(image)
+    @staticmethod
+    def align(image, resize_factor=1, margin=0):
+        threshold = CoinAlign.coin_threshold(image, resize_factor)
+        x0, y0, x1, y1 = CoinAlign.square_bounding_box(threshold, margin)
+        #cv2.rectangle(image, (x0, y0), (x1, y1), (0, 0, 255), 5)
+        #im.show(image)
+        return image[y0:y1, x0:x1]
 
 
-ca = CoinAlign()
-for i in glob('data/*.JPG'):
-    image = cv2.imread(i)
-    ca.align(image)
+if __name__ == '__main__':
+    ca = CoinAlign()
+    for i in glob('data/*.JPG'):
+        image = cv2.imread(i)
+        ca.align(image)
 
