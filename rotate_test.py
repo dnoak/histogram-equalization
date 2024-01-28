@@ -3,7 +3,6 @@ import numpy as np
 from image import Image as im
 from tqdm import tqdm
 
-
 def coin_threshold(image, resize_factor):
     img_resized = im.resize(image, resize_factor)
     img_gray = cv2.cvtColor(img_resized, cv2.COLOR_BGR2GRAY)

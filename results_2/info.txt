@@ -1,2 +1,0 @@
-equalization={'fn': 'rgb_cv2_gray', 'args': {}}
-channels=[0, 1, 2]

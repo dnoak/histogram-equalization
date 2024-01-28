@@ -24,7 +24,7 @@ class ColorHistogram:
     def rgb_weighted_gray(image, weights):
         weights = np.array(weights) / np.sum(weights)
         rw, gw, bw = weights
-        wg_image = (image[:, :, 0] * rw + image[:, :, 1] * gw + image[:, :, 2] * bw)
+        wg_image = (image[:, :, 0] * bw + image[:, :, 1] * gw + image[:, :, 2] * rw)
         histogram = cv2.calcHist([wg_image.astype(np.uint8)], [0], None, [256], [0, 256])
         return histogram.flatten().astype(np.uint32)
     
@@ -50,7 +50,7 @@ class ColorEqualization:
         plt.show() if show else None
 
     @staticmethod
-    def find_equalization_ranges(histogram):
+    def find_equalization_ranges(histogram, show_histogram):
         histogram = np.convolve(histogram, np.ones(5), mode='same')
         histogram = histogram / np.max(histogram) * 255
 
@@ -66,9 +66,9 @@ class ColorEqualization:
         range_end = sorted_valleys_and_max_peak[
             np.where(sorted_valleys_and_max_peak == max_peak_index)[0][0] - 1
         ]
-        
-        ColorEqualization.plot_histogram(histogram, [range_start], show=False, color='red')
-        ColorEqualization.plot_histogram(histogram, range_end, show=True, color='green')
+        if show_histogram:
+            ColorEqualization.plot_histogram(histogram, [range_start], show=False, color='red')
+            ColorEqualization.plot_histogram(histogram, range_end, show=True, color='green')
         
         return [range_start, range_end], histogram
 
@@ -85,22 +85,13 @@ class ColorEqualization:
         return equalized_image
 
     @staticmethod
-    def start(image_path, equalization, channels):
+    def start(image_path, equalization, channels, show_histogram):
         image = cv2.imread(image_path)
         histogram = getattr(ColorHistogram, equalization['fn'])(image, **equalization['args'])
-        ranges, histogram = ColorEqualization.find_equalization_ranges(histogram)
-        
+        ranges, histogram = ColorEqualization.find_equalization_ranges(histogram, show_histogram)
         space_name = equalization['fn'].split('_')[0].upper()
         equalized_image = ColorEqualization.back_projection(image, ranges, space_name, channels)
-        
-        #save_path = f"{self.save_path}/{Path(image_path).name}"
-        #im.save(equalized_image, save_path)
-        
         return equalized_image
-        
-        # with open(f"{self.save_path}/histogram.txt", 'w') as f:
-        #     f.write(f"{equalization}\n")
-        #     f.write(f"{channels}\n")
 
 
 if __name__ == '__main__':

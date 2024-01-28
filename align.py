@@ -19,23 +19,10 @@ class CoinAlign:
         return cv2.bitwise_not(img_erode)
 
     @staticmethod
-    def xywh_to_xyxy(x, y, w, h, image_shape):
-        xc = x * image_shape[1]
-        yc = y * image_shape[0]
-        width = w * image_shape[1]
-        height = h * image_shape[0]
-        x1 = int(xc - width/2)
-        y1 = int(yc - height/2)
-        x2 = int(xc + width/2)
-        y2 = int(yc + height/2)
-        return x1, y1, x2, y2
-
-    @staticmethod
     def square_bounding_box(image, margin):
-        coords = np.argwhere(image)
-
         xaxis_sum = np.sum(image, axis=0)
         xaxis_grad = np.abs(np.gradient(xaxis_sum))
+        xaxis_grad = np.convolve(xaxis_grad, np.ones(5), mode='same')
         x_start_peak = np.argmax(xaxis_grad[:len(xaxis_grad)//2])
         x_start = np.argwhere(xaxis_grad[:x_start_peak] == 0)[-2][0]
         x_end_peak = np.argmax(xaxis_grad[len(xaxis_grad)//2:]) + len(xaxis_grad)//2
@@ -43,6 +30,7 @@ class CoinAlign:
 
         yaxis_sum = np.sum(image, axis=1)
         yaxis_grad = np.abs(np.gradient(yaxis_sum))
+        yaxis_grad = np.convolve(yaxis_grad, np.ones(5), mode='same')
         y_start_peak = np.argmax(yaxis_grad[:len(yaxis_grad)//2])
         y_start = np.argwhere(yaxis_grad[:y_start_peak] == 0)[-2][0]
         y_end_peak = np.argmax(yaxis_grad[len(yaxis_grad)//2:]) + len(yaxis_grad)//2
@@ -51,6 +39,10 @@ class CoinAlign:
         xsys_xeye = np.array([[x_start, y_start], [x_end, y_end]])
         axis_sizes = xsys_xeye[1] - xsys_xeye[0]
         axis_diff = np.abs(axis_sizes[0] - axis_sizes[1])
+
+        # plt.plot(xaxis_grad)
+        # plt.plot(yaxis_grad)
+        # plt.show()
 
         min_axis_index = np.argmin(axis_sizes)
         xsys_xeye[0][min_axis_index] -= axis_diff // 2
@@ -64,12 +56,26 @@ class CoinAlign:
         return *xsys_xeye[0], *xsys_xeye[1]
 
     @staticmethod
+    def circle_mask(image, radius_ratio=1.05):
+        mask = np.zeros(image.shape[:2], dtype=np.uint8)
+        cv2.circle(
+            mask, (image.shape[1] // 2, image.shape[0] // 2),
+            int(image.shape[1] // 2 * radius_ratio), 255, -1
+        )
+        fg = cv2.bitwise_and(image, image, mask=mask)
+
+        mask = cv2.bitwise_not(mask)
+        background = np.full(image.shape, 255, dtype=np.uint8)
+        bk = cv2.bitwise_and(background, background, mask=mask)
+
+        return cv2.bitwise_or(fg, bk) 
+    
+    @staticmethod
     def align(image, resize_factor=1, margin=0):
         threshold = CoinAlign.coin_threshold(image, resize_factor)
         x0, y0, x1, y1 = CoinAlign.square_bounding_box(threshold, margin)
-        #cv2.rectangle(image, (x0, y0), (x1, y1), (0, 0, 255), 5)
-        #im.show(image)
-        return image[y0:y1, x0:x1]
+        image = image[y0:y1, x0:x1]
+        return CoinAlign.circle_mask(image)
 
 
 if __name__ == '__main__':
