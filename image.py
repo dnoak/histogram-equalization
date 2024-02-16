@@ -41,9 +41,33 @@ class Image:
         composite = background_subsection * (1 - alpha_mask) + overlay_colors * alpha_mask
         background[0:h, 0:w] = composite
         return background
+    
+    @staticmethod
+    def to_square(image):
+        (h, w) = image.shape[:2]
+        if h == w: return image
+          
+        pad = np.abs(h - w)
+        pad_A = pad // 2
+        pad_B = pad - pad_A
+        if h > w:
+            top = 0; bottom = 0
+            left = pad_A; right = pad_B
+        else:
+            top = pad_A; bottom = pad_B
+            left = 0; right = 0
 
+        image = cv2.copyMakeBorder(
+            image, top, bottom, left, right, 
+            cv2.BORDER_CONSTANT, value=[255, 255, 255]
+        )
+        #print(image.shape)
+        #assert image.shape[0] == image.shape[1]
+        return image
+    
     @staticmethod
     def resize_max(image, max_res):
+        print(image.shape)
         max_dim = max(image.shape)
         if max_dim > max_res:
             resize_scale = max_res / max_dim
@@ -51,6 +75,8 @@ class Image:
             max_dim_arg = np.argmax(image.shape)
             resize_scale = max_res / image.shape[max_dim_arg]
         image = cv2.resize(image, (0, 0), fx=resize_scale, fy=resize_scale)
+        print(image.shape)
+        print()
         return image
 
     @staticmethod

@@ -42,6 +42,6 @@ equalize_and_align(
     channels=[0, 1, 2],
     slope_thresh=4,
     show_histogram=False,
-    samples=1000,
+    samples=100,
     random_seed=1011
 )

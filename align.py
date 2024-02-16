@@ -40,10 +40,6 @@ class CoinAlign:
         axis_sizes = xsys_xeye[1] - xsys_xeye[0]
         axis_diff = np.abs(axis_sizes[0] - axis_sizes[1])
 
-        # plt.plot(xaxis_grad)
-        # plt.plot(yaxis_grad)
-        # plt.show()
-
         min_axis_index = np.argmin(axis_sizes)
         xsys_xeye[0][min_axis_index] -= axis_diff // 2
         xsys_xeye[1][min_axis_index] += axis_diff // 2

@@ -13,4 +13,9 @@ class RemoveBackground:
         return bg_removed[y:y+h, x:x+w]
 
     def remove_bg(self, image):
-        return rembg.remove(image, session=self.session)
+        return rembg.remove(
+            image, 
+            session=self.session,
+            #alpha_matting=True,
+            post_process_mask=True,
+        )

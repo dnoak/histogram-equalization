@@ -48,9 +48,11 @@ def equalize_and_align(
                 show_histogram=show_histogram,
             )
             white_bg = im.alpha_to_white(equalized)
-            #print(equalized.shape)
-            save_path = f"{save_folder_path}/{Path(image_path).stem}.png"
-            im.save(white_bg, save_path)
+            squared = im.to_square(white_bg)
+
+            save_path = f"{save_folder_path}/{Path(image_path).stem}.jpg"
+            #im.show(squared)
+            im.save(squared, save_path)
 
         except Exception as e:
             print(e)
