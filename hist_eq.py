@@ -10,35 +10,51 @@ from scipy import signal
 @dataclass
 class ColorHistogram:
     @staticmethod
-    def rgb(image, channel):
-        rgb_channel = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)[:, :, channel]
-        histogram = cv2.calcHist([rgb_channel], [0], None, [256], [0, 256])
-        return histogram.flatten().astype(np.uint32)
+    def __smooth_norm_hist(histogram):
+        histogram = histogram.flatten().astype(np.uint32)
+        histogram = np.convolve(histogram, np.ones(9), mode='same')
+        histogram = np.convolve(histogram, np.ones(9), mode='same')
+        histogram = np.convolve(histogram, np.ones(9), mode='same')
+        histogram = histogram / np.max(histogram) * 255
+        return histogram
 
     @staticmethod
     def rgb_cv2_gray(image):
-        rgb_channel = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        histogram = cv2.calcHist([rgb_channel], [0], None, [256], [0, 256])
-        return histogram.flatten().astype(np.uint32)
+        alpha_channel = image[:, :, 3]
+        gray_channel = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
+        gray_channel_not_alpha = gray_channel[np.where(alpha_channel > 0)]
+
+        histogram = cv2.calcHist([gray_channel_not_alpha], [0], None, [256], [0, 256])
+        return ColorHistogram.__smooth_norm_hist(histogram)
     
+    @staticmethod
     def rgb_weighted_gray(image, weights):
         weights = np.array(weights) / np.sum(weights)
         rw, gw, bw = weights
-        wg_image = (image[:, :, 0] * bw + image[:, :, 1] * gw + image[:, :, 2] * rw)
-        histogram = cv2.calcHist([wg_image.astype(np.uint8)], [0], None, [256], [0, 256])
-        return histogram.flatten().astype(np.uint32)
+        wg_image = image.astype(np.float32)
+
+        alpha_channel = wg_image[:, :, 3]
+        gray_channel = (wg_image[:, :, 0] * bw + wg_image[:, :, 1] * gw + wg_image[:, :, 2] * rw)
+        gray_channel = gray_channel / np.max(gray_channel) * 255
+        gray_channel_not_alpha = gray_channel[np.where(alpha_channel > 0)]
+
+        histogram = cv2.calcHist([gray_channel_not_alpha.astype(np.uint8)], [0], None, [256], [0, 256])
+        return ColorHistogram.__smooth_norm_hist(histogram)
     
     @staticmethod
     def hsv(image, channel):
+        alpha_channel = image[:, :, 3]
         hsv_channel = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)[:, :, channel]
-        histogram = cv2.calcHist([hsv_channel], [0], None, [256], [0, 256])
-        return histogram.flatten().astype(np.uint32)
+        hsv_channel_not_alpha = hsv_channel[np.where(alpha_channel > 0)]
+
+        histogram = cv2.calcHist([hsv_channel_not_alpha], [0], None, [256], [0, 256])
+        return ColorHistogram.__smooth_norm_hist(histogram)
     
     @staticmethod   
     def lab(image, channel):
         lab_channel = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)[:, :, channel]
         histogram = cv2.calcHist([lab_channel], [0], None, [256], [0, 256])
-        return histogram.flatten().astype(np.uint32)
+        return ColorHistogram.__smooth_norm_hist(histogram)
 
 @dataclass
 class ColorEqualization:
@@ -50,45 +66,37 @@ class ColorEqualization:
         plt.show() if show else None
 
     @staticmethod
-    def find_equalization_ranges(histogram, show_histogram):
-        histogram = np.convolve(histogram, np.ones(5), mode='same')
-        histogram = histogram / np.max(histogram) * 255
-
-        grad = np.gradient(histogram)
-        # firs grad increase > 0.1
-        range_start = np.where(grad > 0.1)[0][0]
-
-        valleys = signal.find_peaks(-histogram)[0].tolist()
-        max_peak_index = int(np.argmax(histogram))
-        sorted_valleys_and_max_peak = np.array(sorted(valleys+[max_peak_index]))
-
-        # left valley near to max peak
-        range_end = sorted_valleys_and_max_peak[
-            np.where(sorted_valleys_and_max_peak == max_peak_index)[0][0] - 1
-        ]
+    def find_equalization_ranges(histogram, slope_thresh, show_histogram):
+        #histogram[0:10] = histogram[10]
+        cumsum = np.cumsum(histogram)
+        cumsum = cumsum / np.max(cumsum) * 255
+        
+        range_start = np.where(cumsum > slope_thresh)[0][0]
+        range_end = 255 - np.where((max(cumsum) - cumsum)[::-1] > slope_thresh)[0][0]
+        
         if show_histogram:
+            # ColorEqualization.plot_histogram(grad, show=True)
             ColorEqualization.plot_histogram(histogram, [range_start], show=False, color='red')
-            ColorEqualization.plot_histogram(histogram, range_end, show=True, color='green')
+            ColorEqualization.plot_histogram(histogram, [range_end], show=True, color='green')
         
         return [range_start, range_end], histogram
 
     @staticmethod
     def back_projection(image, ranges, space_name, channels):
+        alpha_channel = image[:, :, 3]
         transformed_space = cv2.cvtColor(image, getattr(cv2, f"COLOR_BGR2{space_name}"))
         for channel in channels:
             value_channel = transformed_space[:, :, channel]
             clipped_channel = np.clip(value_channel, ranges[0], ranges[1])
             normalized_channel = cv2.normalize(clipped_channel, None, 0, 255, cv2.NORM_MINMAX)
             transformed_space[:, :, channel] = normalized_channel
-        
         equalized_image = cv2.cvtColor(transformed_space, getattr(cv2, f"COLOR_{space_name}2BGR"))
-        return equalized_image
+        return cv2.merge([equalized_image, alpha_channel])
 
     @staticmethod
-    def start(image_path, equalization, channels, show_histogram):
-        image = cv2.imread(image_path)
+    def start(image, equalization, slope_thresh, channels, show_histogram):
         histogram = getattr(ColorHistogram, equalization['fn'])(image, **equalization['args'])
-        ranges, histogram = ColorEqualization.find_equalization_ranges(histogram, show_histogram)
+        ranges, histogram = ColorEqualization.find_equalization_ranges(histogram, slope_thresh, show_histogram)
         space_name = equalization['fn'].split('_')[0].upper()
         equalized_image = ColorEqualization.back_projection(image, ranges, space_name, channels)
         return equalized_image

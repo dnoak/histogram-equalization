@@ -30,6 +30,19 @@ class Image:
         return shape[0] * threshold > shape[1]
 
     @staticmethod
+    def alpha_to_white(image):
+        background = np.ones(image.shape[:2] + (3,), dtype=np.uint8) * 255
+        overlay = image
+        alpha_channel = overlay[:, :, 3] / 255
+        overlay_colors = overlay[:, :, :3]
+        alpha_mask = np.dstack((alpha_channel, alpha_channel, alpha_channel))
+        h, w = overlay.shape[:2]
+        background_subsection = background[0:h, 0:w]
+        composite = background_subsection * (1 - alpha_mask) + overlay_colors * alpha_mask
+        background[0:h, 0:w] = composite
+        return background
+
+    @staticmethod
     def resize_max(image, max_res):
         max_dim = max(image.shape)
         if max_dim > max_res:

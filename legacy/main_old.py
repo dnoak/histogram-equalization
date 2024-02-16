@@ -30,18 +30,18 @@ samples: pega um grupo aleatório de imagens (None = todas as imagens)
 random_seed: semente aleatória para o método de amostragem
 '''
 
-from control import equalize_and_align
+from control_old import equalize_and_align
 
 equalize_and_align(
-    images_path='data/01 - Originais',
-    save_folder_path='data/01 - Originais_results',
+    images_path='data/original',
+    save_folder_path='data/original_results',
     equalization={
         'fn': 'rgb_weighted_gray',
         'args': {'weights': [1, 1, 1]}
     },
     channels=[0, 1, 2],
-    slope_thresh=4,
     show_histogram=False,
-    samples=1000,
+    align_margin=0.005,
+    samples=None,
     random_seed=1011
 )
