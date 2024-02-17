@@ -3,7 +3,7 @@ import cv2
 import os
 import random
 import contextlib
-from align import CoinAlign
+from legacy.align import CoinAlign
 from hist_eq import ColorEqualization
 from glob import glob
 from pathlib import Path

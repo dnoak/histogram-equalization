@@ -6,7 +6,7 @@ import cv2
 import natsort
 import threading
 from remove_bg import RemoveBackground
-from align import CoinAlign
+from legacy.align import CoinAlign
 from hist_eq import ColorEqualization
 from glob import glob
 from pathlib import Path

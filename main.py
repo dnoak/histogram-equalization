@@ -43,7 +43,7 @@ equalize_and_align(
     },
     channels=[0, 1, 2],
     slope_thresh=4, # basicamente muda o contraste da imagem, quanto maior, mais contraste
-    show_histogram=True,
-    samples=100,
+    show_histogram=False,
+    samples=None,
     random_seed=1011
 )
