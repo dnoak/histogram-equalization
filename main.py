@@ -42,8 +42,9 @@ equalize_and_align(
         'args': {'weights': [1, 1, 1]}
     },
     channels=[0, 1, 2],
-    slope_thresh=4, # basicamente muda o contraste da imagem, quanto maior, mais contraste
-    show_histogram=False,
+    black_thresh=4, # muda o balanço de preto
+    white_thresh=4, # muda o balanço de branco
+    show_histogram=True,
     samples=None,
     random_seed=1011
 )

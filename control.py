@@ -22,8 +22,8 @@ def timer(message="Time"):
     print(f"{message}: {t1 - t0:.2f}s\n")
 
 def equalize_and_align(
-        images_path, save_folder_path, equalization, channels, slope_thresh, 
-        show_histogram, samples=None, random_seed=1010):
+        images_path, save_folder_path, equalization, channels, black_thresh, 
+        white_thresh, show_histogram, samples=None, random_seed=1010):
     random.seed(random_seed)
     images_paths = glob(f'{images_path}/*.*')
     images_paths = natsort.os_sorted(images_paths)
@@ -43,7 +43,8 @@ def equalize_and_align(
             equalized = ColorEqualization.start(
                 image=cropped,
                 equalization=equalization,
-                slope_thresh=slope_thresh,
+                black_thresh=black_thresh,
+                white_thresh=white_thresh,
                 channels=channels,
                 show_histogram=show_histogram,
             )

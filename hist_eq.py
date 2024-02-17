@@ -66,13 +66,13 @@ class ColorEqualization:
         plt.show() if show else None
 
     @staticmethod
-    def find_equalization_ranges(histogram, slope_thresh, show_histogram):
+    def find_equalization_ranges(histogram, black_thresh, white_thresh, show_histogram):
         #histogram[0:10] = histogram[10]
         cumsum = np.cumsum(histogram)
         cumsum = cumsum / np.max(cumsum) * 255
         
-        range_start = np.where(cumsum > slope_thresh)[0][0]
-        range_end = 255 - np.where((max(cumsum) - cumsum)[::-1] > slope_thresh)[0][0]
+        range_start = np.where(cumsum > black_thresh)[0][0]
+        range_end = 255 - np.where((max(cumsum) - cumsum)[::-1] > white_thresh)[0][0]
         
         if show_histogram:
             # ColorEqualization.plot_histogram(grad, show=True)
@@ -94,9 +94,10 @@ class ColorEqualization:
         return cv2.merge([equalized_image, alpha_channel])
 
     @staticmethod
-    def start(image, equalization, slope_thresh, channels, show_histogram):
+    def start(image, equalization, black_thresh, white_thresh, channels, show_histogram):
         histogram = getattr(ColorHistogram, equalization['fn'])(image, **equalization['args'])
-        ranges, histogram = ColorEqualization.find_equalization_ranges(histogram, slope_thresh, show_histogram)
+        ranges, histogram = ColorEqualization.find_equalization_ranges(
+            histogram, black_thresh, white_thresh, show_histogram)
         space_name = equalization['fn'].split('_')[0].upper()
         equalized_image = ColorEqualization.back_projection(image, ranges, space_name, channels)
         return equalized_image
