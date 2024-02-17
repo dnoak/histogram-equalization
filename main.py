@@ -23,7 +23,9 @@ channels: lista canais que serão equalizados
         za apenas o canal azul)
         [0, 2] (equaliza os canais vermelho e azul)
 
-align_margin: margem adicionada ao redor da moeda após o alinhamento
+slope_thresh: limiar do algoritmo do histograma, em geral muda o contraste da imagem
+
+show_histogram: mostra o gráfio do histograma de cores de cada imagem
 
 samples: pega um grupo aleatório de imagens (None = todas as imagens)
 
@@ -40,8 +42,8 @@ equalize_and_align(
         'args': {'weights': [1, 1, 1]}
     },
     channels=[0, 1, 2],
-    slope_thresh=4,
-    show_histogram=False,
+    slope_thresh=4, # basicamente muda o contraste da imagem, quanto maior, mais contraste
+    show_histogram=True,
     samples=100,
     random_seed=1011
 )
