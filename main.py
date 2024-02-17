@@ -44,7 +44,7 @@ equalize_and_align(
     channels=[0, 1, 2],
     black_thresh=4, # muda o balanço de preto
     white_thresh=4, # muda o balanço de branco
-    show_histogram=True,
+    show_histogram=False,
     samples=None,
     random_seed=1011
 )
